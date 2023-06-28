@@ -65,23 +65,19 @@ class PDFFactory:
         self.page_object.add_resource(font_dict, pikepdf.Name.Font, font.value)
         return pdf_font
 
-    def _open_page(self, page_ix: int) -> None:
+    def open_page(self, page_ix: int) -> None:
         """
         Loads the instructions for a page of the PDF.  Pages numbers are 
         zero-indexed.
         """
         # for now do 1 page at a time; later i will add support for multiple
         # page streams.
-        if self.current_page is not None:
-            raise PDFQuickTextError(
-                'A page is already open and must be closed prior to opening a new page.'
-            )
-        
+        self._assert_page_is_closed()
         self._current_page = page_ix
         self.page_object = self.pdf_object.pages[page_ix]
         self._page_instructions = pikepdf.parse_content_stream(self.page_object)
 
-    def _close_page(self) -> None:
+    def close_page(self) -> None:
         """
         Closes the currently opened page of the PDF.
         """
@@ -98,6 +94,13 @@ class PDFFactory:
         """
         if self.page_object is None:
             raise PDFQuickTextError('A page must be opened prior to this operation.')
+        
+    def _assert_page_is_closed(self):
+        """
+        Raises an exception if a page is not closed.
+        """
+        if self.page_object is not None:
+            raise PDFQuickTextError('The page must be closed prior to this operation.')
 
     def _make_text_instructions(self,
                                 text: str,
@@ -197,3 +200,18 @@ class PDFFactory:
             return tuple(self.page_object.MediaBox)
         # fall back to ANSI A (US Letter) 
         return (0, 0, 612, 792)
+    
+    def save(self, path: str) -> None:
+        """
+        Writes the modified PDF to the file `path`.
+        """
+        self._assert_page_is_closed()
+        self.pdf_object.save(path, fix_metadata_version=True)
+
+    def reset(self) -> None:
+        """
+        Resets the PDF object to the initial state.
+        """
+        self.pdf_object.close()
+        self.__init__(self.pdf_bytes)
+        
