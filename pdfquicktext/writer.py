@@ -53,7 +53,7 @@ class PDFFactory:
         
         pdf_font = pikepdf.Name(font.value)
         if pdf_font in self.page_object.resources.Font:
-            return
+            return pdf_font
         
         font_dict = pikepdf.Dictionary(
             Type = pikepdf.Name.Font,
@@ -201,6 +201,12 @@ class PDFFactory:
         # fall back to ANSI A (US Letter) 
         return (0, 0, 612, 792)
     
+    def get_num_pages(self) -> int:
+        """
+        Returns the number of pages in the PDF.
+        """
+        return len(self.page_object.pages)
+    
     def save(self, path: str) -> None:
         """
         Writes the modified PDF to the file `path`.
@@ -214,4 +220,3 @@ class PDFFactory:
         """
         self.pdf_object.close()
         self.__init__(self.pdf_bytes)
-        
